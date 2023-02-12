@@ -30,7 +30,6 @@ impl CPU {
             0xff => 0,
             _ => self.register_x + 1,
         };
-        println!("self.register_x: {}", self.register_x);
         self.update_zero_and_negative_flags(self.register_x);
     }
 
