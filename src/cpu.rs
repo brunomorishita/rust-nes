@@ -40,6 +40,16 @@ lazy_static! {
         OpCode::new(0x00, "BRK", 1, 7, AddressingMode::NoneAddressing),
         OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
+        // A logical AND is performed, bit by bit, on the accumulator contents
+        // using the contents of a byte of memory.
+        OpCode::new(0x29, "AND", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0x25, "AND", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x35, "AND", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0x2d, "AND", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x3d, "AND", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new(0x39, "AND", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new(0x21, "AND", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0x31, "AND", 2, 5, AddressingMode::Indirect_Y),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -149,6 +159,14 @@ impl CPU {
         self.mem_write(addr, self.register_a);
     }
 
+    fn and(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        self.register_a &= value;
+        self.update_zero_and_negative_flags(self.register_a);
+    }
+
     fn tax(&mut self) {
         self.register_x = self.register_a;
         self.update_zero_and_negative_flags(self.register_x);
@@ -221,6 +239,11 @@ impl CPU {
                     "LDA" => {
                         self.program_counter += 1;
                         self.lda(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "AND" => {
+                        self.program_counter += 1;
+                        self.and(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "STA" => {
@@ -308,5 +331,16 @@ mod test {
         cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
 
         assert_eq!(cpu.register_a, 0x55);
+    }
+
+    #[test]
+    fn test_0b0111_and_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x29, 0b0011, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0b0111;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0b0011);
     }
 }
