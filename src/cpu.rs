@@ -40,6 +40,7 @@ lazy_static! {
         OpCode::new(0x00, "BRK", 1, 7, AddressingMode::NoneAddressing),
         OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
+        // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
         OpCode::new(0x8d, "STA", 2, 4, AddressingMode::Absolute),
@@ -47,6 +48,8 @@ lazy_static! {
         OpCode::new(0x99, "STA", 2, 4, AddressingMode::Absolute_Y),
         OpCode::new(0x81, "STA", 2, 4, AddressingMode::Indirect_X),
         OpCode::new(0x91, "STA", 2, 4, AddressingMode::Indirect_Y),
+        // Loads a byte of memory into the accumulator
+        // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
         OpCode::new(0xa5, "LDA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0xb5, "LDA", 2, 4, AddressingMode::ZeroPage_X),
