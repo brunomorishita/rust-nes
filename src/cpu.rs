@@ -59,6 +59,9 @@ lazy_static! {
         OpCode::new(0x16, "ASL", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x0e, "ASL", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x1e, "ASL", 3, 7, AddressingMode::Absolute_X),
+        // If the carry flag is clear then add the relative displacement
+        // to the program counter to cause a branch to a new location.
+        OpCode::new(0x90, "BCC", 2, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -218,6 +221,14 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_x);
     }
 
+    fn bcc(&mut self) {
+        if (self.status & 0b0000_0001) == 0 {
+            let offset = self.mem_read(self.program_counter) as i8;
+            let counter = self.program_counter as i32 + offset as i32;
+            self.program_counter = counter as u16;
+        }
+    }
+
     fn update_carry_flag(&mut self, overflow: bool) {
         if overflow {
             self.status = self.status | 0b0000_0001;
@@ -295,6 +306,11 @@ impl CPU {
                     "ASL" => {
                         self.program_counter += 1;
                         self.asl(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "BCC" => {
+                        self.program_counter += 1;
+                        self.bcc();
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "STA" => {
@@ -439,5 +455,27 @@ mod test {
 
         assert_eq!(cpu.register_a, 0b0100_0000);
         assert!(cpu.status & 0b0000_0001 == 1);
+    }
+
+    #[test]
+    fn test_bcc_forward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x90, 0x01, 0xe8, 0xe8, 0xe8, 0x00]);
+        cpu.reset();
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bcc_backward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x90, 0x01, 0x00, 0xe8, 0xe8, 0x90, 0xfb, 0x00]);
+        cpu.reset();
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
     }
 }
