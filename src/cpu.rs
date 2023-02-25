@@ -62,6 +62,9 @@ lazy_static! {
         // If the carry flag is clear then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x90, "BCC", 2, 2, AddressingMode::NoneAddressing),
+        // If the carry flag is set then add the relative displacement
+        // to the program counter to cause a branch to a new location.
+        OpCode::new(0xb0, "BCS", 2, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -221,8 +224,8 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_x);
     }
 
-    fn bcc(&mut self) {
-        if (self.status & 0b0000_0001) == 0 {
+    fn branch_if_carry(&mut self, set: bool) {
+        if (self.status & 0b0000_0001) == set as u8 {
             let offset = self.mem_read(self.program_counter) as i8;
             let counter = self.program_counter as i32 + offset as i32;
             self.program_counter = counter as u16;
@@ -310,7 +313,12 @@ impl CPU {
                     }
                     "BCC" => {
                         self.program_counter += 1;
-                        self.bcc();
+                        self.branch_if_carry(false);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "BCS" => {
+                        self.program_counter += 1;
+                        self.branch_if_carry(true);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "STA" => {
@@ -473,6 +481,30 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load(vec![0x90, 0x01, 0x00, 0xe8, 0xe8, 0x90, 0xfb, 0x00]);
         cpu.reset();
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bcs_forward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xb0, 0x01, 0xe8, 0xe8, 0xe8, 0x00]);
+        cpu.reset();
+        cpu.status = 0x01;
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bcs_backward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xb0, 0x01, 0x00, 0xe8, 0xe8, 0xb0, 0xfb, 0x00]);
+        cpu.reset();
+        cpu.status = 0x01;
         cpu.register_x = 0x00;
         cpu.run();
 
