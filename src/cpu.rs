@@ -95,6 +95,8 @@ lazy_static! {
         OpCode::new(0xb8, "CLV", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
+        // Adds one to the Y register setting the zero and negative flags as appropriate.
+        OpCode::new(0xc8, "INY", 1, 2, AddressingMode::NoneAddressing),
         // Set the carry flag to one.
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
@@ -277,6 +279,14 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_x);
     }
 
+    fn iny(&mut self) {
+        self.register_y = match self.register_y {
+            0xff => 0,
+            _ => self.register_y + 1,
+        };
+        self.update_zero_and_negative_flags(self.register_y);
+    }
+
     fn branch(&mut self, set: bool, status: u8) {
         if (self.status & status) >= set as u8 {
             let offset = self.mem_read(self.program_counter) as i8;
@@ -424,6 +434,10 @@ impl CPU {
                         self.inx();
                         self.program_counter += op.bytes as u16;
                     }
+                    "INY" => {
+                        self.iny();
+                        self.program_counter += op.bytes as u16;
+                    }
                     "BRK" => return,
                     _ => todo!(),
                 },
@@ -486,6 +500,17 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_x, 1)
+    }
+
+    #[test]
+    fn test_iny_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc8, 0xc8, 0x00]);
+        cpu.reset();
+        cpu.register_y = 0xff;
+        cpu.run();
+
+        assert_eq!(cpu.register_y, 1)
     }
 
     #[test]
