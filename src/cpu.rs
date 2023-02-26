@@ -116,6 +116,9 @@ lazy_static! {
         // Copies the current contents of the accumulator into the Y register
         // and sets the zero and negative flags as appropriate.
         OpCode::new(0xa8, "TAY", 1, 2, AddressingMode::NoneAddressing),
+        // Copies the current contents of the stack register into the X register
+        // and sets the zero and negative flags as appropriate.
+        OpCode::new(0xba, "TSX", 1, 2, AddressingMode::NoneAddressing),
         // Loads a byte of memory into the accumulator
         // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
@@ -133,6 +136,7 @@ pub struct CPU {
     pub register_a: u8,
     pub status: u8,
     pub program_counter: u16,
+    pub stack_pointer: u8,
     pub register_x: u8,
     pub register_y: u8,
     memory: [u8; 0xFFFF],
@@ -144,6 +148,7 @@ impl CPU {
             register_a: 0,
             status: 0,
             program_counter: 0,
+            stack_pointer: 0,
             register_x: 0,
             register_y: 0,
             memory: [0; 0xFFFF],
@@ -279,6 +284,11 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_y);
     }
 
+    fn tsx(&mut self) {
+        self.register_x = self.stack_pointer;
+        self.update_zero_and_negative_flags(self.register_x);
+    }
+
     fn inx(&mut self) {
         self.register_x = match self.register_x {
             0xff => 0,
@@ -329,6 +339,7 @@ impl CPU {
         self.register_a = 0;
         self.register_x = 0;
         self.status = 0;
+        self.stack_pointer = 0xff;
 
         self.program_counter = self.mem_read_u16(0xFFFC);
     }
@@ -450,6 +461,10 @@ impl CPU {
                         self.tay();
                         self.program_counter += op.bytes as u16;
                     }
+                    "TSX" => {
+                        self.tsx();
+                        self.program_counter += op.bytes as u16;
+                    }
                     "BRK" => return,
                     _ => todo!(),
                 },
@@ -504,6 +519,17 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_y, 10)
+    }
+
+    #[test]
+    fn test_0xfd_tsx_move_stack_to_x() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xba, 0x00]);
+        cpu.reset();
+        cpu.stack_pointer = 0xfd;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 0xfd)
     }
 
     #[test]
