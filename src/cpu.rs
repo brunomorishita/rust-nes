@@ -71,6 +71,9 @@ lazy_static! {
         // If the negative flag is set then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x30, "BMI", 2, 2, AddressingMode::NoneAddressing),
+        // If the zero flag is clear then add the relative displacement
+        // to the program counter to cause a branch to a new location.
+        OpCode::new(0xd0, "BNE", 2, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -331,6 +334,11 @@ impl CPU {
                         self.branch(true, 0b1000_0000);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
+                    "BNE" => {
+                        self.program_counter += 1;
+                        self.branch(false, 0b0000_0010);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
                     "STA" => {
                         self.program_counter += 1;
                         self.sta(&op.mode);
@@ -563,6 +571,30 @@ mod test {
         cpu.load(vec![0x30, 0x01, 0x00, 0xe8, 0xe8, 0x30, 0xfb, 0x00]);
         cpu.reset();
         cpu.status = 0b1000_0000;
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bne_forward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xd0, 0x01, 0xe8, 0xe8, 0xe8, 0x00]);
+        cpu.reset();
+        cpu.status = 0;
+        cpu.register_x = 0x00;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bne_backward() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xd0, 0x01, 0x00, 0xe8, 0xe8, 0xd0, 0xfb, 0x00]);
+        cpu.reset();
+        cpu.status = 0;
         cpu.register_x = 0x00;
         cpu.run();
 
