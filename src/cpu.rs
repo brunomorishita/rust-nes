@@ -731,10 +731,10 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load(vec![0x18, 0x00]);
         cpu.reset();
-        cpu.status = 0b1111_1111;
+        cpu.status = 0b0101_0101;
         cpu.run();
 
-        assert_eq!(cpu.status, 0b1111_1110);
+        assert_eq!(cpu.status, 0b0101_0100);
     }
 
     #[test]
@@ -742,10 +742,10 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load(vec![0xd8, 0x00]);
         cpu.reset();
-        cpu.status = 0b1111_1111;
+        cpu.status = 0b1010_1010;
         cpu.run();
 
-        assert_eq!(cpu.status, 0b1111_0111);
+        assert_eq!(cpu.status, 0b1010_0010);
     }
 
     #[test]
@@ -753,10 +753,10 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load(vec![0x58, 0x00]);
         cpu.reset();
-        cpu.status = 0b1111_1111;
+        cpu.status = 0b0101_0101;
         cpu.run();
 
-        assert_eq!(cpu.status, 0b1111_1011);
+        assert_eq!(cpu.status, 0b0101_0001);
     }
 
     #[test]
@@ -764,10 +764,10 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load(vec![0xb8, 0x00]);
         cpu.reset();
-        cpu.status = 0b1111_1111;
+        cpu.status = 0b0101_0101;
         cpu.run();
 
-        assert_eq!(cpu.status, 0b1011_1111);
+        assert_eq!(cpu.status, 0b0001_0101);
     }
 
     #[test]
