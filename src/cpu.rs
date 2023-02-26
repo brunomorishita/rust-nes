@@ -240,29 +240,6 @@ impl CPU {
         }
     }
 
-    fn lda(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let value = self.mem_read(addr);
-
-        self.register_a = value;
-        self.update_zero_and_negative_flags(self.register_a);
-    }
-
-    fn sta(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        self.mem_write(addr, self.register_a);
-    }
-
-    fn stx(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        self.mem_write(addr, self.register_x);
-    }
-
-    fn sty(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        self.mem_write(addr, self.register_y);
-    }
-
     fn and(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -300,6 +277,53 @@ impl CPU {
         }
     }
 
+    fn branch(&mut self, set: bool, status: u8) {
+        if (self.status & status) >= set as u8 {
+            let offset = self.mem_read(self.program_counter) as i8;
+            let counter = self.program_counter as i32 + offset as i32;
+            self.program_counter = counter as u16;
+        }
+    }
+
+    fn inx(&mut self) {
+        self.register_x = match self.register_x {
+            0xff => 0,
+            _ => self.register_x + 1,
+        };
+        self.update_zero_and_negative_flags(self.register_x);
+    }
+
+    fn iny(&mut self) {
+        self.register_y = match self.register_y {
+            0xff => 0,
+            _ => self.register_y + 1,
+        };
+        self.update_zero_and_negative_flags(self.register_y);
+    }
+
+    fn lda(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        self.register_a = value;
+        self.update_zero_and_negative_flags(self.register_a);
+    }
+
+    fn sta(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.register_a);
+    }
+
+    fn stx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.register_x);
+    }
+
+    fn sty(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.register_y);
+    }
+
     fn tax(&mut self) {
         self.register_x = self.register_a;
         self.update_zero_and_negative_flags(self.register_x);
@@ -328,30 +352,6 @@ impl CPU {
     fn tya(&mut self) {
         self.register_a = self.register_y;
         self.update_zero_and_negative_flags(self.register_a);
-    }
-
-    fn inx(&mut self) {
-        self.register_x = match self.register_x {
-            0xff => 0,
-            _ => self.register_x + 1,
-        };
-        self.update_zero_and_negative_flags(self.register_x);
-    }
-
-    fn iny(&mut self) {
-        self.register_y = match self.register_y {
-            0xff => 0,
-            _ => self.register_y + 1,
-        };
-        self.update_zero_and_negative_flags(self.register_y);
-    }
-
-    fn branch(&mut self, set: bool, status: u8) {
-        if (self.status & status) >= set as u8 {
-            let offset = self.mem_read(self.program_counter) as i8;
-            let counter = self.program_counter as i32 + offset as i32;
-            self.program_counter = counter as u16;
-        }
     }
 
     fn update_carry_flag(&mut self, overflow: bool) {
