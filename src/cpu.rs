@@ -37,9 +37,6 @@ impl OpCode {
 
 lazy_static! {
     pub static ref CPU_OPS_CODES: Vec<OpCode> = vec![
-        OpCode::new(0x00, "BRK", 1, 7, AddressingMode::NoneAddressing),
-        OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
-        OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // A logical AND is performed, bit by bit, on the accumulator contents
         // using the contents of a byte of memory.
         OpCode::new(0x29, "AND", 2, 2, AddressingMode::Immediate),
@@ -77,6 +74,11 @@ lazy_static! {
         // If the negative flag is clear then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x10, "BPL", 2, 2, AddressingMode::NoneAddressing),
+        // The BRK instruction forces the generation of an interrupt request.
+        // The program counter and processor status are pushed on the stack then
+        // the IRQ interrupt vector at $FFFE/F is loaded into the PC and the break flag
+        // in the status set to one.
+        OpCode::new(0x00, "BRK", 1, 7, AddressingMode::NoneAddressing),
         // If the overflow flag is clear then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x50, "BVC", 2, 2, AddressingMode::NoneAddressing),
@@ -91,6 +93,8 @@ lazy_static! {
         OpCode::new(0x58, "CLI", 1, 2, AddressingMode::NoneAddressing),
         // Clears the overflow flag.
         OpCode::new(0xb8, "CLV", 1, 2, AddressingMode::NoneAddressing),
+        // Adds one to the X register setting the zero and negative flags as appropriate.
+        OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Set the carry flag to one.
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
@@ -105,6 +109,8 @@ lazy_static! {
         OpCode::new(0x99, "STA", 2, 4, AddressingMode::Absolute_Y),
         OpCode::new(0x81, "STA", 2, 4, AddressingMode::Indirect_X),
         OpCode::new(0x91, "STA", 2, 4, AddressingMode::Indirect_Y),
+        // Adds one to the X register setting the zero and negative flags as appropriate.
+        OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
         // Loads a byte of memory into the accumulator
         // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
