@@ -87,6 +87,8 @@ lazy_static! {
         OpCode::new(0x18, "CLC", 1, 2, AddressingMode::NoneAddressing),
         // Sets the decimal mode flag to zero.
         OpCode::new(0xd8, "CLD", 1, 2, AddressingMode::NoneAddressing),
+        // Clears the interrupt disable flag allowing normal interrupt requests to be serviced.
+        OpCode::new(0x58, "CLI", 1, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -373,6 +375,10 @@ impl CPU {
                     }
                     "CLD" => {
                         self.status &= 0b1111_0111;
+                        self.program_counter += op.bytes as u16;
+                    }
+                    "CLI" => {
+                        self.status &= 0b1111_1011;
                         self.program_counter += op.bytes as u16;
                     }
                     "STA" => {
@@ -728,5 +734,16 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.status, 0b1111_0111);
+    }
+
+    #[test]
+    fn test_cli() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x58, 0x00]);
+        cpu.reset();
+        cpu.status = 0b1111_1111;
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b1111_1011);
     }
 }
