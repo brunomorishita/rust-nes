@@ -978,6 +978,17 @@ mod test {
     }
 
     #[test]
+    fn test_sta_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x85, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0x0f;
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0x0f);
+    }
+
+    #[test]
     fn test_stx_zero_page() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x86, 0x10, 0x00]);
