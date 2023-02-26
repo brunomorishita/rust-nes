@@ -95,6 +95,8 @@ lazy_static! {
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
         OpCode::new(0xf8, "SED", 1, 2, AddressingMode::NoneAddressing),
+        // Set the interrupt disable flag to one.
+        OpCode::new(0x78, "SEI", 1, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -397,6 +399,10 @@ impl CPU {
                     }
                     "SED" => {
                         self.status |= 0b0000_1000;
+                        self.program_counter += op.bytes as u16;
+                    }
+                    "SEI" => {
+                        self.status |= 0b0000_0100;
                         self.program_counter += op.bytes as u16;
                     }
                     "STA" => {
@@ -796,5 +802,16 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.status, 0b0101_1101);
+    }
+
+    #[test]
+    fn test_sei() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x78, 0x00]);
+        cpu.reset();
+        cpu.status = 0b1010_1010;
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b1010_1110);
     }
 }
