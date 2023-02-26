@@ -124,6 +124,9 @@ lazy_static! {
         OpCode::new(0x8a, "TXA", 1, 2, AddressingMode::NoneAddressing),
         // Copies the current contents of the X register into the stack register.
         OpCode::new(0x9a, "TXS", 1, 2, AddressingMode::NoneAddressing),
+        // Copies the current contents of the Y register into the accumulator
+        // and sets the zero and negative flags as appropriate.
+        OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
         // Loads a byte of memory into the accumulator
         // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
@@ -302,6 +305,11 @@ impl CPU {
     fn txs(&mut self) {
         self.stack_pointer = self.register_x;
         self.update_zero_and_negative_flags(self.stack_pointer);
+    }
+
+    fn tya(&mut self) {
+        self.register_a = self.register_y;
+        self.update_zero_and_negative_flags(self.register_a);
     }
 
     fn inx(&mut self) {
@@ -488,6 +496,10 @@ impl CPU {
                         self.txs();
                         self.program_counter += op.bytes as u16;
                     }
+                    "TYA" => {
+                        self.tya();
+                        self.program_counter += op.bytes as u16;
+                    }
                     "BRK" => return,
                     _ => todo!(),
                 },
@@ -575,6 +587,17 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.stack_pointer, 0xfd)
+    }
+
+    #[test]
+    fn test_0xaa_tya_move_y_to_a() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x98, 0x00]);
+        cpu.reset();
+        cpu.register_y = 10;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 10)
     }
 
     #[test]
