@@ -338,11 +338,6 @@ impl CPU {
 
             match opcode {
                 Some(op) => match op.name.as_str() {
-                    "LDA" => {
-                        self.program_counter += 1;
-                        self.lda(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
                     "AND" => {
                         self.program_counter += 1;
                         self.and(&op.mode);
@@ -409,6 +404,19 @@ impl CPU {
                         self.status &= 0b1011_1111;
                         self.program_counter += op.bytes as u16;
                     }
+                    "INX" => {
+                        self.inx();
+                        self.program_counter += op.bytes as u16;
+                    }
+                    "INY" => {
+                        self.iny();
+                        self.program_counter += op.bytes as u16;
+                    }
+                    "LDA" => {
+                        self.program_counter += 1;
+                        self.lda(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
                     "SEC" => {
                         self.status |= 0b0000_0001;
                         self.program_counter += op.bytes as u16;
@@ -428,14 +436,6 @@ impl CPU {
                     }
                     "TAX" => {
                         self.tax();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "INX" => {
-                        self.inx();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "INY" => {
-                        self.iny();
                         self.program_counter += op.bytes as u16;
                     }
                     "BRK" => return,
