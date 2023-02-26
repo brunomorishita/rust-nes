@@ -83,6 +83,8 @@ lazy_static! {
         // If the overflow flag is set then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x70, "BVS", 2, 2, AddressingMode::NoneAddressing),
+        // Set the carry flag to zero.
+        OpCode::new(0x18, "CLC", 1, 2, AddressingMode::NoneAddressing),
         // Stores the contents of the accumulator into memory
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -362,6 +364,10 @@ impl CPU {
                         self.program_counter += 1;
                         self.branch(true, 0b0100_0000);
                         self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "CLC" => {
+                        self.status &= 0b1111_1110;
+                        self.program_counter += op.bytes as u16;
                     }
                     "STA" => {
                         self.program_counter += 1;
@@ -694,5 +700,16 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_clc() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x18, 0x00]);
+        cpu.reset();
+        cpu.status = 0b1111_1111;
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b1111_1110);
     }
 }
