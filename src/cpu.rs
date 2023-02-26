@@ -113,6 +113,9 @@ lazy_static! {
         OpCode::new(0x91, "STA", 2, 4, AddressingMode::Indirect_Y),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
+        // Copies the current contents of the accumulator into the Y register
+        // and sets the zero and negative flags as appropriate.
+        OpCode::new(0xa8, "TAY", 1, 2, AddressingMode::NoneAddressing),
         // Loads a byte of memory into the accumulator
         // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
@@ -269,6 +272,11 @@ impl CPU {
     fn tax(&mut self) {
         self.register_x = self.register_a;
         self.update_zero_and_negative_flags(self.register_x);
+    }
+
+    fn tay(&mut self) {
+        self.register_y = self.register_a;
+        self.update_zero_and_negative_flags(self.register_y);
     }
 
     fn inx(&mut self) {
@@ -438,6 +446,10 @@ impl CPU {
                         self.tax();
                         self.program_counter += op.bytes as u16;
                     }
+                    "TAY" => {
+                        self.tay();
+                        self.program_counter += op.bytes as u16;
+                    }
                     "BRK" => return,
                     _ => todo!(),
                 },
@@ -481,6 +493,17 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_x, 10)
+    }
+
+    #[test]
+    fn test_0xaa_tay_move_a_to_y() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xa8, 0x00]);
+        cpu.reset();
+        cpu.register_a = 10;
+        cpu.run();
+
+        assert_eq!(cpu.register_y, 10)
     }
 
     #[test]
