@@ -111,6 +111,10 @@ lazy_static! {
         OpCode::new(0x99, "STA", 2, 4, AddressingMode::Absolute_Y),
         OpCode::new(0x81, "STA", 2, 4, AddressingMode::Indirect_X),
         OpCode::new(0x91, "STA", 2, 4, AddressingMode::Indirect_Y),
+        // Stores the contents of the X register into memory.
+        OpCode::new(0x86, "STX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x96, "STX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new(0x8e, "STX", 3, 4, AddressingMode::Absolute),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xaa, "TAX", 1, 2, AddressingMode::NoneAddressing),
         // Copies the current contents of the accumulator into the Y register
@@ -243,6 +247,11 @@ impl CPU {
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
+    }
+
+    fn stx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.register_x);
     }
 
     fn and(&mut self, mode: &AddressingMode) {
@@ -474,6 +483,11 @@ impl CPU {
                     "STA" => {
                         self.program_counter += 1;
                         self.sta(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "STX" => {
+                        self.program_counter += 1;
+                        self.stx(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "TAX" => {
@@ -961,5 +975,16 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.status, 0b1010_1110);
+    }
+
+    #[test]
+    fn test_stx_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x86, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_x = 0x0f;
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0x0f);
     }
 }
