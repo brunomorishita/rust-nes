@@ -103,6 +103,11 @@ lazy_static! {
         OpCode::new(0xd9, "CMP", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0xc1, "CMP", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0xd1, "CMP", 2, 5, AddressingMode::Indirect_Y),
+        // This instruction compares the contents of the X register with another memory
+        // held value and sets the zero and carry flags as appropriate.
+        OpCode::new(0xe0, "CPX", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0xe4, "CPX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0xec, "CPX", 3, 4, AddressingMode::Absolute),
         // Subtracts one from the value held at a specified memory location setting
         // the zero and negative flags as appropriate.
         OpCode::new(0xc6, "DEC", 2, 5, AddressingMode::ZeroPage),
@@ -313,6 +318,14 @@ impl CPU {
         self.update_zero_and_negative_flags(res as u8);
     }
 
+    fn cpx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr) as i8;
+        let res = self.register_x as i16 - value as i16;
+        self.update_carry_flag(self.register_x as i16 >= value as i16);
+        self.update_zero_and_negative_flags(res as u8);
+    }
+
     fn dec(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -516,6 +529,11 @@ impl CPU {
                     "CMP" => {
                         self.program_counter += 1;
                         self.cmp(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "CPX" => {
+                        self.program_counter += 1;
+                        self.cpx(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "DEC" => {
@@ -722,6 +740,30 @@ mod test {
         cpu.load(vec![0xc5, 0x10, 0x00]);
         cpu.reset();
         cpu.register_a = 0x00;
+        cpu.mem_write(0x10, 0x01);
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b1000_0000);
+    }
+
+    #[test]
+    fn test_cpx_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc5, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_x = 10;
+        cpu.mem_write(0xe4, 10);
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b0000_0011);
+    }
+
+    #[test]
+    fn test_cpx_zero_page_negative() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe4, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_x = 0x00;
         cpu.mem_write(0x10, 0x01);
         cpu.run();
 
