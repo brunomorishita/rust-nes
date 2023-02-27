@@ -767,10 +767,10 @@ mod test {
     #[test]
     fn test_cpx_zero_page() {
         let mut cpu = CPU::new();
-        cpu.load(vec![0xc5, 0x10, 0x00]);
+        cpu.load(vec![0xe4, 0x10, 0x00]);
         cpu.reset();
         cpu.register_x = 10;
-        cpu.mem_write(0xe4, 10);
+        cpu.mem_write(0x10, 10);
         cpu.run();
 
         assert_eq!(cpu.status, 0b0000_0011);
