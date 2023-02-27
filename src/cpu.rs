@@ -93,6 +93,16 @@ lazy_static! {
         OpCode::new(0x58, "CLI", 1, 2, AddressingMode::NoneAddressing),
         // Clears the overflow flag.
         OpCode::new(0xb8, "CLV", 1, 2, AddressingMode::NoneAddressing),
+        // This instruction compares the contents of the accumulator with another
+        // memory held value and sets the zero and carry flags as appropriate.
+        OpCode::new(0xc9, "CMP", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0xc5, "CMP", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0xd5, "CMP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0xcd, "CMP", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0xdd, "CMP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new(0xd9, "CMP", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new(0xc1, "CMP", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0xd1, "CMP", 2, 5, AddressingMode::Indirect_Y),
         // Subtracts one from the value held at a specified memory location setting
         // the zero and negative flags as appropriate.
         OpCode::new(0xc6, "DEC", 2, 5, AddressingMode::ZeroPage),
@@ -295,6 +305,14 @@ impl CPU {
         }
     }
 
+    fn cmp(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr) as i8;
+        let res = self.register_a as i16 - value as i16;
+        self.update_carry_flag(self.register_a as i16 >= value as i16);
+        self.update_zero_and_negative_flags(res as u8);
+    }
+
     fn dec(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -495,6 +513,11 @@ impl CPU {
                         self.status &= 0b1011_1111;
                         self.program_counter += op.bytes as u16;
                     }
+                    "CMP" => {
+                        self.program_counter += 1;
+                        self.cmp(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
                     "DEC" => {
                         self.program_counter += 1;
                         self.dec(&op.mode);
@@ -679,6 +702,30 @@ mod test {
         cpu.load_and_run(vec![0xc6, 0x10, 0x00]);
 
         assert_eq!(cpu.mem_read(0x10), 0x54);
+    }
+
+    #[test]
+    fn test_cmp_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc5, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_a = 10;
+        cpu.mem_write(0x10, 10);
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b0000_0011);
+    }
+
+    #[test]
+    fn test_cmp_zero_page_negative() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc5, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0x00;
+        cpu.mem_write(0x10, 0x01);
+        cpu.run();
+
+        assert_eq!(cpu.status, 0b1000_0000);
     }
 
     #[test]
