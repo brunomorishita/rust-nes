@@ -99,6 +99,8 @@ lazy_static! {
         OpCode::new(0xd6, "DEC", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0xce, "DEC", 3, 6, AddressingMode::Absolute),
         OpCode::new(0xde, "DEC", 3, 7, AddressingMode::Absolute_X),
+        // Subtracts one from the X register setting the zero and negative flags as appropriate.
+        OpCode::new(0xca, "DEX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the Y register setting the zero and negative flags as appropriate.
@@ -300,6 +302,12 @@ impl CPU {
         self.update_zero_and_negative_flags(value as u8);
     }
 
+    fn dex(&mut self) {
+        let value = (self.register_x as i16) - 1;
+        self.register_x = value as u8;
+        self.update_zero_and_negative_flags(self.register_x);
+    }
+
     fn inx(&mut self) {
         self.register_x = match self.register_x {
             0xff => 0,
@@ -484,6 +492,10 @@ impl CPU {
                         self.dec(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
+                    "DEX" => {
+                        self.dex();
+                        self.program_counter += op.bytes as u16;
+                    }
                     "INX" => {
                         self.inx();
                         self.program_counter += op.bytes as u16;
@@ -655,6 +667,17 @@ mod test {
         cpu.load_and_run(vec![0xc6, 0x10, 0x00]);
 
         assert_eq!(cpu.mem_read(0x10), 0x54);
+    }
+
+    #[test]
+    fn test_dex() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xca, 0x00]);
+        cpu.reset();
+        cpu.register_x = 10;
+        cpu.run();
+
+        assert_eq!(cpu.register_x, 9)
     }
 
     #[test]
