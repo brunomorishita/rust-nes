@@ -93,6 +93,12 @@ lazy_static! {
         OpCode::new(0x58, "CLI", 1, 2, AddressingMode::NoneAddressing),
         // Clears the overflow flag.
         OpCode::new(0xb8, "CLV", 1, 2, AddressingMode::NoneAddressing),
+        // Subtracts one from the value held at a specified memory location setting
+        // the zero and negative flags as appropriate.
+        OpCode::new(0xc6, "DEC", 2, 5, AddressingMode::ZeroPage),
+        OpCode::new(0xd6, "DEC", 2, 6, AddressingMode::ZeroPage_X),
+        OpCode::new(0xce, "DEC", 3, 6, AddressingMode::Absolute),
+        OpCode::new(0xde, "DEC", 3, 7, AddressingMode::Absolute_X),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the Y register setting the zero and negative flags as appropriate.
@@ -285,6 +291,15 @@ impl CPU {
         }
     }
 
+    fn dec(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        let value = (value as i16) - 1;
+        self.mem_write(addr, value as u8);
+        self.update_zero_and_negative_flags(value as u8);
+    }
+
     fn inx(&mut self) {
         self.register_x = match self.register_x {
             0xff => 0,
@@ -464,6 +479,11 @@ impl CPU {
                         self.status &= 0b1011_1111;
                         self.program_counter += op.bytes as u16;
                     }
+                    "DEC" => {
+                        self.program_counter += 1;
+                        self.dec(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
                     "INX" => {
                         self.inx();
                         self.program_counter += op.bytes as u16;
@@ -626,6 +646,15 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_a, 10)
+    }
+
+    #[test]
+    fn test_dec_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x55);
+        cpu.load_and_run(vec![0xc6, 0x10, 0x00]);
+
+        assert_eq!(cpu.mem_read(0x10), 0x54);
     }
 
     #[test]
