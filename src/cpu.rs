@@ -123,6 +123,18 @@ lazy_static! {
         OpCode::new(0xca, "DEX", 1, 2, AddressingMode::NoneAddressing),
         // Subtracts one from the Y register setting the zero and negative flags as appropriate.
         OpCode::new(0x88, "DEY", 1, 2, AddressingMode::NoneAddressing),
+        // An exclusive OR is performed, bit by bit, on the accumulator contents using
+        // the contents of a byte of memory.
+        OpCode::new(0x49, "EOR", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0x45, "EOR", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x55, "EOR", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0x4d, "EOR", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x5d, "EOR", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new(0x59, "EOR", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new(0x41, "EOR", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0x51, "EOR", 2, 5, AddressingMode::Indirect_Y),
+
+
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the Y register setting the zero and negative flags as appropriate.
@@ -360,6 +372,14 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_y);
     }
 
+    fn eor(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        self.register_a ^= value;
+        self.update_zero_and_negative_flags(self.register_a);
+    }
+
     fn inx(&mut self) {
         self.register_x = match self.register_x {
             0xff => 0,
@@ -566,6 +586,11 @@ impl CPU {
                     "DEY" => {
                         self.dey();
                         self.program_counter += op.bytes as u16;
+                    }
+                    "EOR" => {
+                        self.program_counter += 1;
+                        self.eor(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
                     }
                     "INX" => {
                         self.inx();
@@ -1228,5 +1253,16 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.mem_read(0x10), 0x0f);
+    }
+
+    #[test]
+    fn test_0b0111_eor_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x49, 0b0011, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0b0111;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0b0100);
     }
 }
