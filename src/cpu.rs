@@ -10,6 +10,7 @@ pub enum AddressingMode {
     Absolute,
     Absolute_X,
     Absolute_Y,
+    Indirect,
     Indirect_X,
     Indirect_Y,
     NoneAddressing,
@@ -139,6 +140,10 @@ lazy_static! {
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the Y register setting the zero and negative flags as appropriate.
         OpCode::new(0xc8, "INY", 1, 2, AddressingMode::NoneAddressing),
+        // Sets the program counter to the address specified by the operand.
+        OpCode::new(0x4c, "JMP", 3, 3, AddressingMode::Absolute),
+        OpCode::new(0x6c, "JMP", 3, 5, AddressingMode::Indirect),
+
         // Set the carry flag to one.
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
@@ -258,6 +263,16 @@ impl CPU {
                 let base = self.mem_read_u16(self.program_counter);
                 let addr = base.wrapping_add(self.register_y as u16);
                 addr
+            }
+            AddressingMode::Indirect => {
+                let base = self.mem_read_u16(self.program_counter);
+                let lo = self.mem_read(base as u16);
+                let mut hi = self.mem_read(base.wrapping_add(1) as u16);
+                if (base & 0x00ff) == 0xff {
+                    hi = self.mem_read(base & 0xff00);
+                }
+
+                (hi as u16) << 8 | (lo as u16)
             }
             AddressingMode::Indirect_X => {
                 let base = self.mem_read(self.program_counter);
@@ -394,6 +409,11 @@ impl CPU {
             _ => self.register_y + 1,
         };
         self.update_zero_and_negative_flags(self.register_y);
+    }
+
+    fn jmp(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.program_counter = addr;
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
@@ -599,6 +619,10 @@ impl CPU {
                     "INY" => {
                         self.iny();
                         self.program_counter += op.bytes as u16;
+                    }
+                    "JMP" => {
+                        self.program_counter += 1;
+                        self.jmp(&op.mode);
                     }
                     "LDA" => {
                         self.program_counter += 1;
@@ -887,6 +911,36 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_y, 1)
+    }
+
+    #[test]
+    fn test_jmp_absolute() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x55);
+        cpu.load_and_run(vec![0xe8, 0x4c, 0x07, 0x80, 0x00, 0x00, 0xe8, 0xe8, 0x00]);
+
+        assert_eq!(cpu.register_x, 0x02);
+    }
+
+    #[test]
+    fn test_jmp_indirect() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x1122, 0x07);
+        cpu.mem_write(0x1123, 0x80);
+        cpu.load_and_run(vec![0xe8, 0x6c, 0x22, 0x11, 0x00, 0x00, 0xe8, 0xe8, 0x00]);
+
+        assert_eq!(cpu.register_x, 0x02);
+    }
+
+    #[test]
+    fn test_jmp_indirect_last_byte_page() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x1100, 0x80);
+        cpu.mem_write(0x11ff, 0x07);
+        cpu.mem_write(0x1200, 0x79);
+        cpu.load_and_run(vec![0xe8, 0x6c, 0xff, 0x11, 0x00, 0x00, 0xe8, 0xe8, 0x00]);
+
+        assert_eq!(cpu.register_x, 0x02);
     }
 
     #[test]
