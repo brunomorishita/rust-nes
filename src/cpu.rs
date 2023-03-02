@@ -66,6 +66,13 @@ lazy_static! {
         // If the zero flag is set then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0xf0, "BEQ", 2, 2, AddressingMode::NoneAddressing),
+        // This instructions is used to test if one or more bits are set
+        // in a target memory location. The mask pattern in A is ANDed with
+        // the value in memory to set or clear the zero flag, but the result
+        // is not kept. Bits 7 and 6 of the value from memory are copied into
+        // the N and V flags.
+        OpCode::new(0x24, "BIT", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x2c, "BIT", 3, 4, AddressingMode::Absolute),
         // If the negative flag is set then add the relative displacement
         // to the program counter to cause a branch to a new location.
         OpCode::new(0x30, "BMI", 2, 2, AddressingMode::NoneAddressing),
@@ -334,6 +341,16 @@ impl CPU {
         }
     }
 
+    fn bit(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+        let res = self.register_a & value;
+        self.update_zero_and_negative_flags(res);
+
+        let value = (value << 1) & 0xc0;
+        self.status |= value;
+    }
+
     fn branch(&mut self, set: bool, status: u8) {
         if (self.status & status) >= set as u8 {
             let offset = self.mem_read(self.program_counter) as i8;
@@ -536,6 +553,11 @@ impl CPU {
                     "BEQ" => {
                         self.program_counter += 1;
                         self.branch(true, 0b0000_0010);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "BIT" => {
+                        self.program_counter += 1;
+                        self.bit(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BMI" => {
@@ -1078,6 +1100,20 @@ mod test {
         cpu.run();
 
         assert_eq!(cpu.register_x, 2);
+    }
+
+    #[test]
+    fn test_bit_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x24, 0x10, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0b1001_1010;
+        cpu.mem_write(0x10, 0b0110_0101);
+        cpu.run();
+
+        assert_eq!(cpu.status & 0b0000_0010, 0b0000_0010);
+        assert_eq!(cpu.status & 0b0100_0000, 0b0100_0000);
+        assert_eq!(cpu.status & 0b1000_0000, 0b1000_0000);
     }
 
     #[test]
