@@ -38,6 +38,17 @@ impl OpCode {
 
 lazy_static! {
     pub static ref CPU_OPS_CODES: Vec<OpCode> = vec![
+        // This instruction adds the contents of a memory location to the accumulator
+        // together with the carry bit. If overflow occurs the carry bit is set,
+        // this enables multiple byte addition to be performed.
+        OpCode::new(0x69, "ADC", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0x65, "ADC", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x75, "ADC", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0x6d, "ADC", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x7d, "ADC", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new(0x79, "ADC", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new(0x61, "ADC", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0x71, "ADC", 2, 5, AddressingMode::Indirect_Y),
         // A logical AND is performed, bit by bit, on the accumulator contents
         // using the contents of a byte of memory.
         OpCode::new(0x29, "AND", 2, 2, AddressingMode::Immediate),
@@ -304,6 +315,23 @@ impl CPU {
         }
     }
 
+    fn adc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        let mut carry = 0;
+        if self.status & 0b0000_0001 == 1 {
+            carry = 1;
+        }
+
+        let (value, overflow1) = self.register_a.overflowing_add(value);
+        let (value, overflow2) = value.overflowing_add(carry);
+        let overflow = overflow1 || overflow2;
+        self.update_carry_flag(overflow);
+        self.update_zero_and_negative_flags(value);
+        self.register_a = value;
+    }
+
     fn and(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -530,6 +558,11 @@ impl CPU {
 
             match opcode {
                 Some(op) => match op.name.as_str() {
+                    "ADC" => {
+                        self.program_counter += 1;
+                        self.adc(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
                     "AND" => {
                         self.program_counter += 1;
                         self.and(&op.mode);
@@ -973,6 +1006,30 @@ mod test {
         cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
 
         assert_eq!(cpu.register_a, 0x55);
+    }
+
+    #[test]
+    fn test_adc_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x69, 3, 0x00]);
+        cpu.reset();
+        cpu.register_a = 8;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 11);
+        assert_eq!(cpu.status, 0);
+    }
+
+    #[test]
+    fn test_adc_immediate_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x69, 3, 0x00]);
+        cpu.reset();
+        cpu.register_a = 255;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 2);
+        assert_eq!(cpu.status & 0b0000_0001, 1);
     }
 
     #[test]
