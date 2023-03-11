@@ -152,8 +152,12 @@ lazy_static! {
         OpCode::new(0x59, "EOR", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0x41, "EOR", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x51, "EOR", 2, 5, AddressingMode::Indirect_Y),
-
-
+        // Adds one to the value held at a specified memory location
+        // setting the zero and negative flags as appropriate.
+        OpCode::new(0xe6, "INC", 2, 5, AddressingMode::ZeroPage),
+        OpCode::new(0xf6, "INC", 2, 6, AddressingMode::ZeroPage_X),
+        OpCode::new(0xee, "INC", 3, 6, AddressingMode::Absolute),
+        OpCode::new(0xfe, "INC", 3, 7, AddressingMode::Absolute_X),
         // Adds one to the X register setting the zero and negative flags as appropriate.
         OpCode::new(0xe8, "INX", 1, 2, AddressingMode::NoneAddressing),
         // Adds one to the Y register setting the zero and negative flags as appropriate.
@@ -443,6 +447,18 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_a);
     }
 
+    fn inc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let mut value = self.mem_read(addr);
+        value = match value {
+            0xff => 0,
+            _ => value + 1,
+        };
+
+        self.mem_write(addr, value);
+        self.update_zero_and_negative_flags(value);
+    }
+
     fn inx(&mut self) {
         self.register_x = match self.register_x {
             0xff => 0,
@@ -668,6 +684,11 @@ impl CPU {
                     "EOR" => {
                         self.program_counter += 1;
                         self.eor(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "INC" => {
+                        self.program_counter += 1;
+                        self.inc(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "INX" => {
@@ -947,6 +968,18 @@ mod test {
         cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
 
         assert_eq!(cpu.register_x, 0xc1)
+    }
+
+    #[test]
+    fn test_inc_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe6, 0x10, 0x00]);
+        cpu.reset();
+        cpu.mem_write(0x10, 0xff);
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0);
+        assert_eq!(cpu.status, 0b0000_0010)
     }
 
     #[test]
