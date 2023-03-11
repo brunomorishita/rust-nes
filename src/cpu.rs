@@ -317,19 +317,23 @@ impl CPU {
 
     fn adc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
-        let value = self.mem_read(addr);
+        let m = self.mem_read(addr) as i8;
 
         let mut carry = 0;
         if self.status & 0b0000_0001 == 1 {
             carry = 1;
         }
 
-        let (value, overflow1) = self.register_a.overflowing_add(value);
-        let (value, overflow2) = value.overflowing_add(carry);
-        let overflow = overflow1 || overflow2;
+        let (res, overflow) = (self.register_a as i8).overflowing_add(m + carry);
         self.update_carry_flag(overflow);
-        self.update_zero_and_negative_flags(value);
-        self.register_a = value;
+        self.update_zero_and_negative_flags(res as u8);
+
+        let v = (self.register_a ^ res as u8) & (m as u8 ^ res as u8) & 0x80;
+        if v != 0 {
+            self.status |= 0b0100_0000;
+        }
+
+        self.register_a = res as u8;
     }
 
     fn and(&mut self, mode: &AddressingMode) {
@@ -1023,13 +1027,13 @@ mod test {
     #[test]
     fn test_adc_immediate_overflow() {
         let mut cpu = CPU::new();
-        cpu.load(vec![0x69, 3, 0x00]);
+        cpu.load(vec![0x69, 0x80, 0x00]);
         cpu.reset();
-        cpu.register_a = 255;
+        cpu.register_a = 0x80;
         cpu.run();
 
-        assert_eq!(cpu.register_a, 2);
-        assert_eq!(cpu.status & 0b0000_0001, 1);
+        assert_eq!(cpu.register_a as i8, 0);
+        assert_eq!(cpu.status, 0b0100_0011);
     }
 
     #[test]
