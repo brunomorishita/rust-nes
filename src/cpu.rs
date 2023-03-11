@@ -161,7 +161,16 @@ lazy_static! {
         // Sets the program counter to the address specified by the operand.
         OpCode::new(0x4c, "JMP", 3, 3, AddressingMode::Absolute),
         OpCode::new(0x6c, "JMP", 3, 5, AddressingMode::Indirect),
-
+        // Loads a byte of memory into the accumulator
+        // setting the zero and negative flags as appropriate
+        OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0xa5, "LDA", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0xb5, "LDA", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0xad, "LDA", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0xbd, "LDA", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new(0xb9, "LDA", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new(0xa1, "LDA", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0xb1, "LDA", 2, 5, AddressingMode::Indirect_Y),
         // Set the carry flag to one.
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
@@ -200,16 +209,6 @@ lazy_static! {
         // Copies the current contents of the Y register into the accumulator
         // and sets the zero and negative flags as appropriate.
         OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
-        // Loads a byte of memory into the accumulator
-        // setting the zero and negative flags as appropriate
-        OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
-        OpCode::new(0xa5, "LDA", 2, 3, AddressingMode::ZeroPage),
-        OpCode::new(0xb5, "LDA", 2, 4, AddressingMode::ZeroPage_X),
-        OpCode::new(0xad, "LDA", 3, 4, AddressingMode::Absolute),
-        OpCode::new(0xbd, "LDA", 3, 4, AddressingMode::Absolute_X),
-        OpCode::new(0xb9, "LDA", 3, 4, AddressingMode::Absolute_Y),
-        OpCode::new(0xa1, "LDA", 2, 6, AddressingMode::Indirect_X),
-        OpCode::new(0xb1, "LDA", 2, 5, AddressingMode::Indirect_Y),
     ];
 }
 
