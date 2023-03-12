@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::opcode::CPU_OPS_CODES;
 
 #[derive(Debug)]
@@ -280,6 +282,18 @@ impl CPU {
         self.program_counter = addr;
     }
 
+    fn push_stack_u16(&mut self, value: u16) {
+        let pos = 0x0100 | self.stack_pointer.wrapping_sub(1) as u16;
+        self.mem_write_u16(pos, value);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(mem::size_of::<u16>() as u8);
+    }
+
+    fn jsr(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.push_stack_u16(self.program_counter + mem::size_of::<u16>() as u16);
+        self.program_counter = addr;
+    }
+
     fn lda(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -502,6 +516,10 @@ impl CPU {
                     "JMP" => {
                         self.program_counter += 1;
                         self.jmp(&op.mode);
+                    }
+                    "JSR" => {
+                        self.program_counter += 1;
+                        self.jsr(&op.mode);
                     }
                     "LDA" => {
                         self.program_counter += 1;
@@ -832,6 +850,17 @@ mod test {
         cpu.load_and_run(vec![0xe8, 0x6c, 0xff, 0x11, 0x00, 0x00, 0xe8, 0xe8, 0x00]);
 
         assert_eq!(cpu.register_x, 0x02);
+    }
+
+    #[test]
+    fn test_jsr() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x55);
+        cpu.load_and_run(vec![0x20, 0x05, 0x80, 0x00, 0x00, 0xe8, 0xe8, 0x00]);
+
+        assert_eq!(cpu.register_x, 0x02);
+        assert_eq!(cpu.stack_pointer, 0xfd);
+        assert_eq!(cpu.mem_read_u16(0x01fe), 0x8003);
     }
 
     #[test]

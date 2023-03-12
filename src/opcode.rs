@@ -150,6 +150,9 @@ lazy_static! {
         // Sets the program counter to the address specified by the operand.
         OpCode::new(0x4c, "JMP", 3, 3, AddressingMode::Absolute),
         OpCode::new(0x6c, "JMP", 3, 5, AddressingMode::Indirect),
+        // The JSR instruction pushes the address (minus one) of the return point on to the
+        // stack and then sets the program counter to the target memory address.
+        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::Absolute),
         // Loads a byte of memory into the accumulator
         // setting the zero and negative flags as appropriate
         OpCode::new(0xa9, "LDA", 2, 2, AddressingMode::Immediate),
