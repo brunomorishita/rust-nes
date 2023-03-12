@@ -163,6 +163,9 @@ lazy_static! {
         OpCode::new(0xb9, "LDA", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0xa1, "LDA", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0xb1, "LDA", 2, 5, AddressingMode::Indirect_Y),
+        // The RTS instruction is used at the end of a subroutine to return
+        // to the calling routine. It pulls the program counter (minus one) from the stack.
+        OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),
         // Set the carry flag to one.
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         // Set the decimal mode flag to one.
