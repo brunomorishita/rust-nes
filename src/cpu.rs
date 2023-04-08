@@ -533,13 +533,13 @@ impl CPU {
                         self.program_counter += 1;
                         self.jsr(&op.mode);
                     }
-                    "RTS" => {
-                        self.rts();
-                    }
                     "LDA" => {
                         self.program_counter += 1;
                         self.lda(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "RTS" => {
+                        self.rts();
                     }
                     "SEC" => {
                         self.status |= 0b0000_0001;
