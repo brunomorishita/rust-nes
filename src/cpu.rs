@@ -314,6 +314,14 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_a);
     }
 
+    fn ldx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        self.register_x = value;
+        self.update_zero_and_negative_flags(self.register_a);
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -536,6 +544,11 @@ impl CPU {
                     "LDA" => {
                         self.program_counter += 1;
                         self.lda(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "LDX" => {
+                        self.program_counter += 1;
+                        self.ldx(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "RTS" => {
@@ -896,6 +909,16 @@ mod test {
         cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
 
         assert_eq!(cpu.register_a, 0x55);
+    }
+
+    #[test]
+    fn test_ldx_from_memory() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x55);
+
+        cpu.load_and_run(vec![0xa6, 0x10, 0x00]);
+
+        assert_eq!(cpu.register_x, 0x55);
     }
 
     #[test]

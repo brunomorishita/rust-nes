@@ -163,6 +163,13 @@ lazy_static! {
         OpCode::new(0xb9, "LDA", 3, 4, AddressingMode::Absolute_Y),
         OpCode::new(0xa1, "LDA", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0xb1, "LDA", 2, 5, AddressingMode::Indirect_Y),
+        // Loads a byte of memory into the X register
+        // setting the zero and negative flags as appropriate.
+        OpCode::new(0xa2, "LDX", 2, 2, AddressingMode::Immediate),
+        OpCode::new(0xa6, "LDX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0xb6, "LDX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new(0xae, "LDX", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0xbe, "LDX", 3, 4, AddressingMode::Absolute_Y),
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),
