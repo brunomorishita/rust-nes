@@ -330,6 +330,28 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_a);
     }
 
+    fn lsr(&mut self, mode: &AddressingMode) {
+        let value;
+        let last_bit: u8;
+        match mode {
+            AddressingMode::NoneAddressing => {
+                last_bit = self.register_a & 0x01;
+                value = self.register_a >> 1;
+                self.register_a = value;
+            }
+
+            _ => {
+                let addr = self.get_operand_address(mode);
+                last_bit = self.mem_read(addr) & 0x01;
+                value = self.mem_read(addr) >> 1;
+                self.mem_write(addr, value);
+            }
+        }
+
+        self.update_carry_flag(last_bit != 0);
+        self.update_zero_and_negative_flags(value);
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -562,6 +584,11 @@ impl CPU {
                     "LDY" => {
                         self.program_counter += 1;
                         self.ldy(&op.mode);
+                        self.program_counter += (op.bytes - 1) as u16;
+                    }
+                    "LSR" => {
+                        self.program_counter += 1;
+                        self.lsr(&op.mode);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "RTS" => {
@@ -942,6 +969,29 @@ mod test {
         cpu.load_and_run(vec![0xa4, 0x10, 0x00]);
 
         assert_eq!(cpu.register_y, 0x55);
+    }
+
+    #[test]
+    fn test_lsr_from_memory() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0xff);
+
+        cpu.load_and_run(vec![0x46, 0x10, 0x00]);
+
+        assert_eq!(cpu.mem_read(0x10), 0x7f);
+        assert_eq!(cpu.status, 0x01);
+    }
+
+    #[test]
+    fn test_lsr_from_reg_a() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x4a, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0xff;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0x7f);
+        assert_eq!(cpu.status, 0x01);
     }
 
     #[test]
