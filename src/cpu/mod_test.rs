@@ -333,6 +333,33 @@ mod test {
     }
 
     #[test]
+    fn test_ora_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x09, 0x05, 0x00]);
+        cpu.reset();
+
+        cpu.register_a = 0x09;
+        cpu.run();
+
+        assert_eq!(cpu.status, 0x00);
+        assert_eq!(cpu.register_a, 0x0d);
+    }
+
+    #[test]
+    fn test_ora_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x05, 0x10, 0x00]);
+        cpu.reset();
+
+        cpu.mem_write(0x10, 0x05);
+        cpu.register_a = 0x09;
+        cpu.run();
+
+        assert_eq!(cpu.status, 0x00);
+        assert_eq!(cpu.register_a, 0x0d);
+    }
+
+    #[test]
     fn test_adc_immediate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x69, 3, 0x00]);

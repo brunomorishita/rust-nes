@@ -351,6 +351,14 @@ impl CPU {
         self.update_zero_and_negative_flags(value);
     }
 
+    fn ora(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.mem_read(addr);
+
+        self.register_a = self.register_a | value;
+        self.update_zero_and_negative_flags(self.register_a);
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -475,6 +483,7 @@ impl CPU {
                 "LDX" => self.ldx(&op.mode),
                 "LDY" => self.ldy(&op.mode),
                 "LSR" => self.lsr(&op.mode),
+                "ORA" => self.ora(&op.mode),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),
