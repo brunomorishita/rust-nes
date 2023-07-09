@@ -190,7 +190,7 @@ impl CPU {
     fn branch(&mut self, set: bool, flag_type: utils::FlagType) {
         if utils::flag_enabled(self.status, flag_type) == set {
             let offset = self.mem_read(self.program_counter) as i8;
-            let counter = self.program_counter as i32 + offset as i32;
+            let counter = self.program_counter as i32 + offset as i32 + 1;
             self.program_counter = counter as u16;
         }
     }
@@ -438,216 +438,62 @@ impl CPU {
                 .iter()
                 .find(|op| op.code == self.mem_read(self.program_counter));
 
-            match opcode {
-                Some(op) => match op.name.as_str() {
-                    "ADC" => {
-                        self.program_counter += 1;
-                        self.adc(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "AND" => {
-                        self.program_counter += 1;
-                        self.and(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "ASL" => {
-                        self.program_counter += 1;
-                        self.asl(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BCC" => {
-                        self.program_counter += 1;
-                        self.branch(false, utils::FlagType::CARRY);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BCS" => {
-                        self.program_counter += 1;
-                        self.branch(true, utils::FlagType::CARRY);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BEQ" => {
-                        self.program_counter += 1;
-                        self.branch(true, utils::FlagType::ZERO);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BIT" => {
-                        self.program_counter += 1;
-                        self.bit(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BMI" => {
-                        self.program_counter += 1;
-                        self.branch(true, utils::FlagType::NEGATIVE);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BNE" => {
-                        self.program_counter += 1;
-                        self.branch(false, utils::FlagType::ZERO);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BPL" => {
-                        self.program_counter += 1;
-                        self.branch(false, utils::FlagType::NEGATIVE);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BVC" => {
-                        self.program_counter += 1;
-                        self.branch(false, utils::FlagType::OVERFLOW);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "BVS" => {
-                        self.program_counter += 1;
-                        self.branch(true, utils::FlagType::OVERFLOW);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "CLC" => {
-                        utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "CLD" => {
-                        utils::clear_flag(&mut self.status, utils::FlagType::DECIMAL);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "CLI" => {
-                        utils::clear_flag(&mut self.status, utils::FlagType::INTERRUPT);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "CLV" => {
-                        utils::clear_flag(&mut self.status, utils::FlagType::OVERFLOW);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "CMP" => {
-                        self.program_counter += 1;
-                        self.cmp(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "CPX" => {
-                        self.program_counter += 1;
-                        self.cpx(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "CPY" => {
-                        self.program_counter += 1;
-                        self.cpy(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "DEC" => {
-                        self.program_counter += 1;
-                        self.dec(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "DEX" => {
-                        self.dex();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "DEY" => {
-                        self.dey();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "EOR" => {
-                        self.program_counter += 1;
-                        self.eor(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "INC" => {
-                        self.program_counter += 1;
-                        self.inc(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "INX" => {
-                        self.inx();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "INY" => {
-                        self.iny();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "JMP" => {
-                        self.program_counter += 1;
-                        self.jmp(&op.mode);
-                    }
-                    "JSR" => {
-                        self.program_counter += 1;
-                        self.jsr(&op.mode);
-                    }
-                    "LDA" => {
-                        self.program_counter += 1;
-                        self.lda(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "LDX" => {
-                        self.program_counter += 1;
-                        self.ldx(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "LDY" => {
-                        self.program_counter += 1;
-                        self.ldy(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "LSR" => {
-                        self.program_counter += 1;
-                        self.lsr(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "RTS" => {
-                        self.rts();
-                    }
-                    "SEC" => {
-                        utils::set_flag(&mut self.status, utils::FlagType::CARRY);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "SED" => {
-                        utils::set_flag(&mut self.status, utils::FlagType::DECIMAL);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "SEI" => {
-                        utils::set_flag(&mut self.status, utils::FlagType::INTERRUPT);
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "STA" => {
-                        self.program_counter += 1;
-                        self.sta(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "STX" => {
-                        self.program_counter += 1;
-                        self.stx(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "STY" => {
-                        self.program_counter += 1;
-                        self.sty(&op.mode);
-                        self.program_counter += (op.bytes - 1) as u16;
-                    }
-                    "TAX" => {
-                        self.tax();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "TAY" => {
-                        self.tay();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "TSX" => {
-                        self.tsx();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "TXA" => {
-                        self.txa();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "TXS" => {
-                        self.txs();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "TYA" => {
-                        self.tya();
-                        self.program_counter += op.bytes as u16;
-                    }
-                    "BRK" => return,
-                    _ => todo!(),
-                },
-                None => todo!(),
+            self.program_counter += 1;
+            let pc_current = self.program_counter;
+
+            let op = opcode.unwrap();
+            match op.name.as_str() {
+                "ADC" => self.adc(&op.mode),
+                "AND" => self.and(&op.mode),
+                "ASL" => self.asl(&op.mode),
+                "BCC" => self.branch(false, utils::FlagType::CARRY),
+                "BCS" => self.branch(true, utils::FlagType::CARRY),
+                "BEQ" => self.branch(true, utils::FlagType::ZERO),
+                "BIT" => self.bit(&op.mode),
+                "BMI" => self.branch(true, utils::FlagType::NEGATIVE),
+                "BNE" => self.branch(false, utils::FlagType::ZERO),
+                "BPL" => self.branch(false, utils::FlagType::NEGATIVE),
+                "BVC" => self.branch(false, utils::FlagType::OVERFLOW),
+                "BVS" => self.branch(true, utils::FlagType::OVERFLOW),
+                "CLC" => utils::clear_flag(&mut self.status, utils::FlagType::CARRY),
+                "CLD" => utils::clear_flag(&mut self.status, utils::FlagType::DECIMAL),
+                "CLI" => utils::clear_flag(&mut self.status, utils::FlagType::INTERRUPT),
+                "CLV" => utils::clear_flag(&mut self.status, utils::FlagType::OVERFLOW),
+                "CMP" => self.cmp(&op.mode),
+                "CPX" => self.cpx(&op.mode),
+                "CPY" => self.cpy(&op.mode),
+                "DEC" => self.dec(&op.mode),
+                "DEX" => self.dex(),
+                "DEY" => self.dey(),
+                "EOR" => self.eor(&op.mode),
+                "INC" => self.inc(&op.mode),
+                "INX" => self.inx(),
+                "INY" => self.iny(),
+                "JMP" => self.jmp(&op.mode),
+                "JSR" => self.jsr(&op.mode),
+                "LDA" => self.lda(&op.mode),
+                "LDX" => self.ldx(&op.mode),
+                "LDY" => self.ldy(&op.mode),
+                "LSR" => self.lsr(&op.mode),
+                "RTS" => self.rts(),
+                "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
+                "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),
+                "SEI" => utils::set_flag(&mut self.status, utils::FlagType::INTERRUPT),
+                "STA" => self.sta(&op.mode),
+                "STX" => self.stx(&op.mode),
+                "STY" => self.sty(&op.mode),
+                "TAX" => self.tax(),
+                "TAY" => self.tay(),
+                "TSX" => self.tsx(),
+                "TXA" => self.txa(),
+                "TXS" => self.txs(),
+                "TYA" => self.tya(),
+                "BRK" => return,
+                _ => todo!(),
+            }
+
+            if pc_current == self.program_counter {
+                self.program_counter += (op.bytes - 1) as u16;
             }
         }
     }
