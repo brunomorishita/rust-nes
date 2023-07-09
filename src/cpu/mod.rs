@@ -1,6 +1,7 @@
 use std::mem;
 
 mod mod_test;
+mod utils;
 
 use crate::opcode::CPU_OPS_CODES;
 
@@ -126,18 +127,14 @@ impl CPU {
         let addr = self.get_operand_address(mode);
         let m = self.mem_read(addr) as i8;
 
-        let mut carry = 0;
-        if self.status & 0b0000_0001 == 1 {
-            carry = 1;
-        }
-
-        let (res, overflow) = (self.register_a as i8).overflowing_add(m + carry);
+        let (res, overflow) = (self.register_a as i8)
+            .overflowing_add(m + utils::flag_enabled(self.status, utils::FlagType::OVERFLOW) as i8);
         self.update_carry_flag(overflow);
         self.update_zero_and_negative_flags(res as u8);
 
         let v = (self.register_a ^ res as u8) & (m as u8 ^ res as u8) & 0x80;
         if v != 0 {
-            self.status |= 0b0100_0000;
+            utils::set_flag(&mut self.status, utils::FlagType::OVERFLOW);
         }
 
         self.register_a = res as u8;
@@ -190,8 +187,8 @@ impl CPU {
         self.status |= value;
     }
 
-    fn branch(&mut self, set: bool, status: u8) {
-        if (self.status & status) >= set as u8 {
+    fn branch(&mut self, set: bool, flag_type: utils::FlagType) {
+        if utils::flag_enabled(self.status, flag_type) == set {
             let offset = self.mem_read(self.program_counter) as i8;
             let counter = self.program_counter as i32 + offset as i32;
             self.program_counter = counter as u16;
@@ -401,23 +398,23 @@ impl CPU {
 
     fn update_carry_flag(&mut self, overflow: bool) {
         if overflow {
-            self.status = self.status | 0b0000_0001;
+            utils::set_flag(&mut self.status, utils::FlagType::CARRY);
         } else {
-            self.status = self.status & 0b1111_1110;
+            utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
         }
     }
 
     fn update_zero_and_negative_flags(&mut self, result: u8) {
         if result == 0 {
-            self.status = self.status | 0b0000_0010;
+            utils::set_flag(&mut self.status, utils::FlagType::ZERO);
         } else {
-            self.status = self.status & 0b1111_1101;
+            utils::clear_flag(&mut self.status, utils::FlagType::ZERO);
         }
 
         if result & 0b1000_0000 != 0 {
-            self.status = self.status | 0b1000_0000;
+            utils::set_flag(&mut self.status, utils::FlagType::NEGATIVE);
         } else {
-            self.status = self.status & 0b0111_1111;
+            utils::clear_flag(&mut self.status, utils::FlagType::NEGATIVE);
         }
     }
 
@@ -460,17 +457,17 @@ impl CPU {
                     }
                     "BCC" => {
                         self.program_counter += 1;
-                        self.branch(false, 0b0000_0001);
+                        self.branch(false, utils::FlagType::CARRY);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BCS" => {
                         self.program_counter += 1;
-                        self.branch(true, 0b0000_0001);
+                        self.branch(true, utils::FlagType::CARRY);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BEQ" => {
                         self.program_counter += 1;
-                        self.branch(true, 0b0000_0010);
+                        self.branch(true, utils::FlagType::ZERO);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BIT" => {
@@ -480,43 +477,43 @@ impl CPU {
                     }
                     "BMI" => {
                         self.program_counter += 1;
-                        self.branch(true, 0b1000_0000);
+                        self.branch(true, utils::FlagType::NEGATIVE);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BNE" => {
                         self.program_counter += 1;
-                        self.branch(false, 0b0000_0010);
+                        self.branch(false, utils::FlagType::ZERO);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BPL" => {
                         self.program_counter += 1;
-                        self.branch(false, 0b1000_0000);
+                        self.branch(false, utils::FlagType::NEGATIVE);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BVC" => {
                         self.program_counter += 1;
-                        self.branch(false, 0b0100_0000);
+                        self.branch(false, utils::FlagType::OVERFLOW);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "BVS" => {
                         self.program_counter += 1;
-                        self.branch(true, 0b0100_0000);
+                        self.branch(true, utils::FlagType::OVERFLOW);
                         self.program_counter += (op.bytes - 1) as u16;
                     }
                     "CLC" => {
-                        self.status &= 0b1111_1110;
+                        utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
                         self.program_counter += op.bytes as u16;
                     }
                     "CLD" => {
-                        self.status &= 0b1111_0111;
+                        utils::clear_flag(&mut self.status, utils::FlagType::DECIMAL);
                         self.program_counter += op.bytes as u16;
                     }
                     "CLI" => {
-                        self.status &= 0b1111_1011;
+                        utils::clear_flag(&mut self.status, utils::FlagType::INTERRUPT);
                         self.program_counter += op.bytes as u16;
                     }
                     "CLV" => {
-                        self.status &= 0b1011_1111;
+                        utils::clear_flag(&mut self.status, utils::FlagType::OVERFLOW);
                         self.program_counter += op.bytes as u16;
                     }
                     "CMP" => {
@@ -597,15 +594,15 @@ impl CPU {
                         self.rts();
                     }
                     "SEC" => {
-                        self.status |= 0b0000_0001;
+                        utils::set_flag(&mut self.status, utils::FlagType::CARRY);
                         self.program_counter += op.bytes as u16;
                     }
                     "SED" => {
-                        self.status |= 0b0000_1000;
+                        utils::set_flag(&mut self.status, utils::FlagType::DECIMAL);
                         self.program_counter += op.bytes as u16;
                     }
                     "SEI" => {
-                        self.status |= 0b0000_0100;
+                        utils::set_flag(&mut self.status, utils::FlagType::INTERRUPT);
                         self.program_counter += op.bytes as u16;
                     }
                     "STA" => {
