@@ -196,6 +196,9 @@ lazy_static! {
         OpCode::new(0x01, "ORA", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x11, "ORA", 2, 5, AddressingMode::Indirect_Y),
 
+        // Pushes a copy of the accumulator on to the stack.
+        OpCode::new(0x48, "PHA", 1, 3, AddressingMode::NoneAddressing),
+
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),

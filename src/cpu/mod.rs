@@ -294,6 +294,19 @@ impl CPU {
         val
     }
 
+    fn push_stack(&mut self, value: u8) {
+        let pos = 0x0100 | self.stack_pointer as u16;
+        self.mem_write(pos, value);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+    }
+
+    fn pop_stack(&mut self) -> u8 {
+        let pos = 0x0100 | self.stack_pointer.wrapping_add(1) as u16;
+        let val = self.mem_read(pos);
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
+        val
+    }
+
     fn jsr(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.push_stack_u16(self.program_counter + mem::size_of::<u16>() as u16);
@@ -357,6 +370,10 @@ impl CPU {
 
         self.register_a = self.register_a | value;
         self.update_zero_and_negative_flags(self.register_a);
+    }
+
+    fn pha(&mut self) {
+        self.push_stack(self.register_a);
     }
 
     fn sta(&mut self, mode: &AddressingMode) {
@@ -484,6 +501,7 @@ impl CPU {
                 "LDY" => self.ldy(&op.mode),
                 "LSR" => self.lsr(&op.mode),
                 "ORA" => self.ora(&op.mode),
+                "PHA" => self.pha(),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),
