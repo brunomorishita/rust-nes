@@ -374,6 +374,22 @@ mod test {
     }
 
     #[test]
+    fn test_php() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x08, 0x00]);
+        cpu.reset();
+
+        let status: u8 = 0b1100_1010;
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.stack_pointer, 0xfe);
+        assert!(utils::flag_enabled(cpu.status, utils::FlagType::B_FLAG));
+        assert!(utils::flag_enabled(cpu.status, utils::FlagType::BIT_5));
+        assert_eq!(cpu.pop_stack(), status);
+    }
+
+    #[test]
     fn test_adc_immediate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x69, 3, 0x00]);

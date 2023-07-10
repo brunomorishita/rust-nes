@@ -376,6 +376,12 @@ impl CPU {
         self.push_stack(self.register_a);
     }
 
+    fn php(&mut self) {
+        self.push_stack(self.status);
+        utils::set_flag(&mut self.status, utils::FlagType::BIT_5);
+        utils::set_flag(&mut self.status, utils::FlagType::B_FLAG);
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -502,6 +508,7 @@ impl CPU {
                 "LSR" => self.lsr(&op.mode),
                 "ORA" => self.ora(&op.mode),
                 "PHA" => self.pha(),
+                "PHP" => self.php(),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),

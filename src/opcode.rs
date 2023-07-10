@@ -199,6 +199,9 @@ lazy_static! {
         // Pushes a copy of the accumulator on to the stack.
         OpCode::new(0x48, "PHA", 1, 3, AddressingMode::NoneAddressing),
 
+        // Pushes a copy of the status flags on to the stack.
+        OpCode::new(0x08, "PHP", 1, 3, AddressingMode::NoneAddressing),
+
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),
