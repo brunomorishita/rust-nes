@@ -390,6 +390,19 @@ mod test {
     }
 
     #[test]
+    fn test_pla() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x68, 0x00]);
+        cpu.reset();
+
+        cpu.push_stack(0x09);
+        cpu.run();
+
+        assert_eq!(cpu.stack_pointer, 0xff);
+        assert_eq!(cpu.register_a, 0x09);
+    }
+
+    #[test]
     fn test_adc_immediate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x69, 3, 0x00]);
