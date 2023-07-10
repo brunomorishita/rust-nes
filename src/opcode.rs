@@ -206,6 +206,10 @@ lazy_static! {
         // The zero and negative flags are set as appropriate.
         OpCode::new(0x68, "PLA", 1, 3, AddressingMode::NoneAddressing),
 
+        // Pulls an 8 bit value from the stack and into the processor flags.
+        // The flags will take on new states as determined by the value pulled.
+        OpCode::new(0x28, "PLP", 1, 3, AddressingMode::NoneAddressing),
+
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),

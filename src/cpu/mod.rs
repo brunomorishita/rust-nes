@@ -387,6 +387,10 @@ impl CPU {
         self.update_zero_and_negative_flags(self.register_a);
     }
 
+    fn plp(&mut self) {
+        self.status = self.pop_stack();
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -515,6 +519,7 @@ impl CPU {
                 "PHA" => self.pha(),
                 "PHP" => self.php(),
                 "PLA" => self.pla(),
+                "PLP" => self.plp(),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),

@@ -403,6 +403,20 @@ mod test {
     }
 
     #[test]
+    fn test_plp() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x28, 0x00]);
+        cpu.reset();
+
+        let status: u8 = 0b1100_1010;
+        cpu.push_stack(status);
+        cpu.run();
+
+        assert_eq!(cpu.stack_pointer, 0xff);
+        assert_eq!(cpu.status, status);
+    }
+
+    #[test]
     fn test_adc_immediate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x69, 3, 0x00]);
