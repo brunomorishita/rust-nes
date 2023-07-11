@@ -391,6 +391,45 @@ impl CPU {
         self.status = self.pop_stack();
     }
 
+    fn rol(&mut self, mode: &AddressingMode) {
+        let status = self.status;
+        let carry = utils::flag_enabled(self.status, utils::FlagType::CARRY);
+
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.register_a >> 7 == 1 {
+                    utils::set_flag(&mut self.status, utils::FlagType::CARRY);
+                } else {
+                    utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
+                }
+
+                if carry {
+                    self.register_a = (self.register_a << 1) | 0b0000_0001;
+                } else {
+                    self.register_a = (self.register_a << 1) & 0b1111_1110;
+                }
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let mut value = self.mem_read(addr);
+
+                if value >> 7 == 1 {
+                    utils::set_flag(&mut self.status, utils::FlagType::CARRY);
+                } else {
+                    utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
+                }
+
+                if carry {
+                    value = (value << 1) | 0b0000_0001;
+                } else {
+                    value = (value << 1) & 0b1111_1110;
+                }
+
+                self.mem_write(addr, value);
+            }
+        }
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -520,6 +559,7 @@ impl CPU {
                 "PHP" => self.php(),
                 "PLA" => self.pla(),
                 "PLP" => self.plp(),
+                "ROL" => self.rol(&op.mode),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),

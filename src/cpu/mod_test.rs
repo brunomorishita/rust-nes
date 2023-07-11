@@ -417,6 +417,102 @@ mod test {
     }
 
     #[test]
+    fn test_rol_accumulate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x2a, 0x00]);
+        cpu.reset();
+
+        let a: u8 = 0b0000_1010;
+        let status: u8 = 0b1100_1010;
+        cpu.register_a = a;
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0b0001_0100);
+        assert_eq!(cpu.status, 0b1100_1010);
+    }
+
+    #[test]
+    fn test_rol_accumulate_carry_on() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x2a, 0x00]);
+        cpu.reset();
+
+        let a: u8 = 0b1000_1010;
+        let status: u8 = 0b1100_1010;
+        cpu.register_a = a;
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0b0001_0100);
+        assert_eq!(cpu.status, 0b1100_1011);
+    }
+
+    #[test]
+    fn test_rol_accumulate_carry_out() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x2a, 0x00]);
+        cpu.reset();
+
+        let a: u8 = 0b0000_1010;
+        let status: u8 = 0b1100_1011;
+        cpu.register_a = a;
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 0b0001_0101);
+        assert_eq!(cpu.status, 0b1100_1010);
+    }
+
+    #[test]
+    fn test_rol_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x26, 0x10, 0x00]);
+        cpu.reset();
+
+        let data = 0b0000_1010;
+        let status: u8 = 0b1100_1010;
+        cpu.mem_write(0x10, data);
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0b0001_0100);
+        assert_eq!(cpu.status, 0b1100_1010);
+    }
+
+    #[test]
+    fn test_rol_zero_page_carry_on() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x26, 0x10, 0x00]);
+        cpu.reset();
+
+        let a: u8 = 0b1000_1010;
+        let status: u8 = 0b1100_1010;
+        cpu.mem_write(0x10, a);
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0b0001_0100);
+        assert_eq!(cpu.status, 0b1100_1011);
+    }
+
+    #[test]
+    fn test_rol_zero_page_carry_out() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x26, 0x10, 0x00]);
+        cpu.reset();
+
+        let a: u8 = 0b0000_1010;
+        let status: u8 = 0b1100_1011;
+        cpu.mem_write(0x10, a);
+        cpu.status = status;
+        cpu.run();
+
+        assert_eq!(cpu.mem_read(0x10), 0b0001_0101);
+        assert_eq!(cpu.status, 0b1100_1010);
+    }
+
+    #[test]
     fn test_adc_immediate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x69, 3, 0x00]);
