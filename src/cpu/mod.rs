@@ -430,6 +430,45 @@ impl CPU {
         }
     }
 
+    fn ror(&mut self, mode: &AddressingMode) {
+        let status = self.status;
+        let carry = utils::flag_enabled(self.status, utils::FlagType::CARRY);
+
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.register_a & 1 == 1 {
+                    utils::set_flag(&mut self.status, utils::FlagType::CARRY);
+                } else {
+                    utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
+                }
+
+                if carry {
+                    self.register_a = (self.register_a >> 1) | 0b1000_0000;
+                } else {
+                    self.register_a = (self.register_a >> 1) & 0b0111_1111;
+                }
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let mut value = self.mem_read(addr);
+
+                if value & 1 == 1 {
+                    utils::set_flag(&mut self.status, utils::FlagType::CARRY);
+                } else {
+                    utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
+                }
+
+                if carry {
+                    value = (value >> 1) | 0b1000_0000;
+                } else {
+                    value = (value >> 1) & 0b0111_1111;
+                }
+
+                self.mem_write(addr, value);
+            }
+        }
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -560,6 +599,7 @@ impl CPU {
                 "PLA" => self.pla(),
                 "PLP" => self.plp(),
                 "ROL" => self.rol(&op.mode),
+                "ROR" => self.ror(&op.mode),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),

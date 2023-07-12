@@ -219,6 +219,15 @@ lazy_static! {
         OpCode::new(0x2e, "ROL", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x3e, "ROL", 3, 7, AddressingMode::Absolute_X),
 
+        // Move each of the bits in either A or M one place to the right.
+        // Bit 7 is filled with the current value of the carry flag whilst
+        // the old bit 0 becomes the new carry flag value.
+        OpCode::new(0x6a, "ROR", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new(0x66, "ROR", 2, 5, AddressingMode::ZeroPage),
+        OpCode::new(0x76, "ROR", 2, 6, AddressingMode::ZeroPage_X),
+        OpCode::new(0x6e, "ROR", 3, 6, AddressingMode::Absolute),
+        OpCode::new(0x7e, "ROR", 3, 7, AddressingMode::Absolute_X),
+
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),
