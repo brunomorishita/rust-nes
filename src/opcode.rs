@@ -228,6 +228,10 @@ lazy_static! {
         OpCode::new(0x6e, "ROR", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x7e, "ROR", 3, 7, AddressingMode::Absolute_X),
 
+        // The RTI instruction is used at the end of an interrupt processing routine.
+        // It pulls the processor flags from the stack followed by the program counter.
+        OpCode::new(0x40, "RTI", 1, 6, AddressingMode::NoneAddressing),
+
         // The RTS instruction is used at the end of a subroutine to return
         // to the calling routine. It pulls the program counter (minus one) from the stack.
         OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NoneAddressing),

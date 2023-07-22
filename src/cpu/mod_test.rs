@@ -632,6 +632,25 @@ mod test {
         assert_eq!(cpu.status, 0b1100_1010);
     }
 
+    // TODO: need to test more stuff than this
+    #[test]
+    fn test_rti() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x40, 0x00, 0x00, 0x00, 0x00, 0xe8, 0x00]);
+        cpu.reset();
+
+        let status = 0b1010_1010;
+        let pc = 0x8005;
+        cpu.push_stack_u16(pc);
+        cpu.push_stack(status);
+        cpu.run();
+
+        assert_eq!(cpu.stack_pointer, 0xff);
+        //assert_eq!(cpu.status, status);
+        //assert_eq!(cpu.program_counter, pc);
+        assert_eq!(cpu.register_x, 1);
+    }
+
     #[test]
     fn test_0b0111_and_immediate() {
         let mut cpu = CPU::new();

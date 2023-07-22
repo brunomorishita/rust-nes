@@ -469,6 +469,11 @@ impl CPU {
         }
     }
 
+    fn rti(&mut self) {
+        self.status = self.pop_stack();
+        self.program_counter = self.pop_stack_u16();
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_a);
@@ -600,6 +605,7 @@ impl CPU {
                 "PLP" => self.plp(),
                 "ROL" => self.rol(&op.mode),
                 "ROR" => self.ror(&op.mode),
+                "RTI" => self.rti(),
                 "RTS" => self.rts(),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),
