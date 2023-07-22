@@ -479,6 +479,11 @@ impl CPU {
         self.mem_write(addr, self.register_a);
     }
 
+    fn sbc(&mut self, mode: &AddressingMode) {
+        self.register_a = !self.register_a + 1;
+        self.adc(mode);
+    }
+
     fn stx(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         self.mem_write(addr, self.register_x);
@@ -607,6 +612,7 @@ impl CPU {
                 "ROR" => self.ror(&op.mode),
                 "RTI" => self.rti(),
                 "RTS" => self.rts(),
+                "SBC" => self.sbc(&op.mode),
                 "SEC" => utils::set_flag(&mut self.status, utils::FlagType::CARRY),
                 "SED" => utils::set_flag(&mut self.status, utils::FlagType::DECIMAL),
                 "SEI" => utils::set_flag(&mut self.status, utils::FlagType::INTERRUPT),

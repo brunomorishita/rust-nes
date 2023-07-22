@@ -537,6 +537,30 @@ mod test {
     }
 
     #[test]
+    fn test_sbc_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe9, 8, 0x00]);
+        cpu.reset();
+        cpu.register_a = 2;
+        cpu.run();
+
+        assert_eq!(cpu.register_a, 6);
+        assert_eq!(cpu.status, 0);
+    }
+
+    #[test]
+    fn test_sbc_immediate_zero() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe9, 0x0a, 0x00]);
+        cpu.reset();
+        cpu.register_a = 0x0a;
+        cpu.run();
+
+        assert_eq!(cpu.register_a as i8, 0);
+        assert_eq!(cpu.status, 0b0000_0010);
+    }
+
+    #[test]
     fn test_ror_accumulate() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x6a, 0x00]);
