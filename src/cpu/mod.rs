@@ -493,8 +493,10 @@ impl CPU {
     }
 
     fn sbc(&mut self, mode: &AddressingMode) {
-        self.register_a = !self.register_a + 1;
-        self.adc(mode);
+        let addr = self.get_operand_address(mode);
+        let data = (self.mem_read(addr) as i8).wrapping_neg().wrapping_sub(1) as u8;
+
+        self.add(data)
     }
 
     fn stx(&mut self, mode: &AddressingMode) {
