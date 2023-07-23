@@ -232,19 +232,19 @@ impl CPU {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
 
-        let value = (value as i16) - 1;
+        let value = value.wrapping_sub(1);
         self.mem_write(addr, value as u8);
         self.update_zero_and_negative_flags(value as u8);
     }
 
     fn dex(&mut self) {
-        let value = (self.register_x as i16) - 1;
+        let value = self.register_x.wrapping_sub(1);
         self.register_x = value as u8;
         self.update_zero_and_negative_flags(self.register_x);
     }
 
     fn dey(&mut self) {
-        let value = (self.register_y as i16) - 1;
+        let value = self.register_y.wrapping_sub(1);
         self.register_y = value as u8;
         self.update_zero_and_negative_flags(self.register_y);
     }
