@@ -123,13 +123,17 @@ impl CPU {
         }
     }
 
-    fn adc(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let m = self.mem_read(addr) as i8;
+    fn add(&mut self, m: u8) {
+        let res = self.register_a as u16
+            + m as u16
+            + utils::flag_enabled(self.status, utils::FlagType::CARRY) as u16;
 
-        let (res, overflow) = (self.register_a as i8)
-            .overflowing_add(m + utils::flag_enabled(self.status, utils::FlagType::OVERFLOW) as i8);
-        self.update_carry_flag(overflow);
+        if res > u8::MAX.into() {
+            utils::set_flag(&mut self.status, utils::FlagType::CARRY);
+        } else {
+            utils::clear_flag(&mut self.status, utils::FlagType::CARRY);
+        }
+
         self.update_zero_and_negative_flags(res as u8);
 
         let v = (self.register_a ^ res as u8) & (m as u8 ^ res as u8) & 0x80;
@@ -138,6 +142,13 @@ impl CPU {
         }
 
         self.register_a = res as u8;
+    }
+
+    fn adc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.mem_read(addr);
+
+        self.add(data)
     }
 
     fn and(&mut self, mode: &AddressingMode) {
