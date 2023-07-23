@@ -183,8 +183,17 @@ impl CPU {
         let res = self.register_a & value;
         self.update_zero_and_negative_flags(res);
 
-        let value = (value << 1) & 0xc0;
-        self.status |= value;
+        if value & 0b1000_0000 > 0 {
+            utils::set_flag(&mut self.status, utils::FlagType::NEGATIVE);
+        } else {
+            utils::clear_flag(&mut self.status, utils::FlagType::NEGATIVE);
+        }
+
+        if value & 0b0100_0000 > 0 {
+            utils::set_flag(&mut self.status, utils::FlagType::OVERFLOW);
+        } else {
+            utils::clear_flag(&mut self.status, utils::FlagType::OVERFLOW);
+        }
     }
 
     fn branch(&mut self, set: bool, flag_type: utils::FlagType) {
