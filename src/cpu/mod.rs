@@ -260,28 +260,19 @@ impl CPU {
     fn inc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let mut value = self.mem_read(addr);
-        value = match value {
-            0xff => 0,
-            _ => value + 1,
-        };
+        value = value.wrapping_add(1);
 
         self.mem_write(addr, value);
         self.update_zero_and_negative_flags(value);
     }
 
     fn inx(&mut self) {
-        self.register_x = match self.register_x {
-            0xff => 0,
-            _ => self.register_x + 1,
-        };
+        self.register_x = self.register_x.wrapping_add(1);
         self.update_zero_and_negative_flags(self.register_x);
     }
 
     fn iny(&mut self) {
-        self.register_y = match self.register_y {
-            0xff => 0,
-            _ => self.register_y + 1,
-        };
+        self.register_y = self.register_y.wrapping_add(1);
         self.update_zero_and_negative_flags(self.register_y);
     }
 
