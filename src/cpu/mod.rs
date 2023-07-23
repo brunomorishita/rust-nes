@@ -3,7 +3,7 @@ use std::mem;
 mod mod_test;
 mod utils;
 
-use crate::opcode::CPU_OPS_CODES;
+use crate::opcode::{OpCode, CPU_OPS_CODES};
 
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
@@ -569,6 +569,35 @@ impl CPU {
         self.run_with_callback(|_| {});
     }
 
+    fn DebugOp(&self, op: &OpCode) {
+        print!("Operation: {} ", op.name);
+        let a = self.mem_read(self.program_counter);
+        let b = self.mem_read(self.program_counter + 1);
+        match op.mode {
+            AddressingMode::Immediate => println!("#{:#x}", a),
+            AddressingMode::ZeroPage => println!("${:#x}", a),
+            AddressingMode::Absolute => println!("${:#x}", ((b as u16) << 8) | (a as u16)),
+            AddressingMode::ZeroPage_X => println!("${:#x},x", a),
+            AddressingMode::ZeroPage_Y => println!("${:#x},y", a),
+            AddressingMode::Absolute_X => println!("${:#x},x", ((b as u16) << 8) | (a as u16)),
+            AddressingMode::Absolute_Y => println!("${:#x},y", ((b as u16) << 8) | (a as u16)),
+            AddressingMode::Indirect => println!("(${:#x})", ((b as u16) << 8) | (a as u16)),
+            AddressingMode::Indirect_X => println!("(${:#x},x)", a),
+            AddressingMode::Indirect_Y => {
+                println!("$({:#x}),y", ((b as u16) << 8) | (a as u16))
+            }
+            AddressingMode::NoneAddressing => println!(""),
+        }
+    }
+
+    fn DebugGame(&self) {
+        println!(
+            "head snake: {},{}",
+            self.mem_read(0x10),
+            self.mem_read(0x11)
+        );
+    }
+
     pub fn run_with_callback<F>(&mut self, mut callback: F)
     where
         F: FnMut(&mut CPU),
@@ -584,24 +613,8 @@ impl CPU {
             let pc_current = self.program_counter;
 
             let op = opcode.unwrap();
-            print!("Operation: {} ", op.name);
-            let a = self.mem_read(self.program_counter);
-            let b = self.mem_read(self.program_counter + 1);
-            match op.mode {
-                AddressingMode::Immediate => println!("#{:#x}", a),
-                AddressingMode::ZeroPage => println!("${:#x}", a),
-                AddressingMode::Absolute => println!("${:#x}", ((b as u16) << 8) | (a as u16)),
-                AddressingMode::ZeroPage_X => println!("${:#x},x", a),
-                AddressingMode::ZeroPage_Y => println!("${:#x},y", a),
-                AddressingMode::Absolute_X => println!("${:#x},x", ((b as u16) << 8) | (a as u16)),
-                AddressingMode::Absolute_Y => println!("${:#x},y", ((b as u16) << 8) | (a as u16)),
-                AddressingMode::Indirect => println!("(${:#x})", ((b as u16) << 8) | (a as u16)),
-                AddressingMode::Indirect_X => println!("(${:#x},x)", a),
-                AddressingMode::Indirect_Y => {
-                    println!("$({:#x}),y", ((b as u16) << 8) | (a as u16))
-                }
-                AddressingMode::NoneAddressing => println!(""),
-            }
+
+            self.DebugOp(op);
 
             match op.name.as_str() {
                 "ADC" => self.adc(&op.mode),
@@ -662,6 +675,8 @@ impl CPU {
                 "BRK" => return,
                 _ => todo!(),
             }
+
+            self.DebugGame();
 
             if pc_current == self.program_counter {
                 self.program_counter += (op.bytes - 1) as u16;
