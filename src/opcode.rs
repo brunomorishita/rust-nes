@@ -185,6 +185,10 @@ lazy_static! {
         OpCode::new(0x4e, "LSR", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x5e, "LSR", 3, 7, AddressingMode::Absolute_X),
 
+        // The NOP instruction causes no changes to the processor other than
+        // the normal incrementing of the program counter to the next instruction.
+        OpCode::new(0xea, "NOP", 1, 2, AddressingMode::NoneAddressing),
+
         // An inclusive OR is performed, bit by bit, on the accumulator contents
         // using the contents of a byte of memory.
         OpCode::new(0x09, "ORA", 2, 2, AddressingMode::Immediate),

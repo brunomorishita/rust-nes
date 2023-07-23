@@ -364,6 +364,8 @@ impl CPU {
         self.update_zero_and_negative_flags(value);
     }
 
+    fn nop(&mut self) {}
+
     fn ora(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.mem_read(addr);
@@ -582,6 +584,25 @@ impl CPU {
             let pc_current = self.program_counter;
 
             let op = opcode.unwrap();
+            print!("Operation: {} ", op.name);
+            let a = self.mem_read(self.program_counter);
+            let b = self.mem_read(self.program_counter + 1);
+            match op.mode {
+                AddressingMode::Immediate => println!("#{:#x}", a),
+                AddressingMode::ZeroPage => println!("${:#x}", a),
+                AddressingMode::Absolute => println!("${:#x}", ((b as u16) << 8) | (a as u16)),
+                AddressingMode::ZeroPage_X => println!("${:#x},x", a),
+                AddressingMode::ZeroPage_Y => println!("${:#x},y", a),
+                AddressingMode::Absolute_X => println!("${:#x},x", ((b as u16) << 8) | (a as u16)),
+                AddressingMode::Absolute_Y => println!("${:#x},y", ((b as u16) << 8) | (a as u16)),
+                AddressingMode::Indirect => println!("(${:#x})", ((b as u16) << 8) | (a as u16)),
+                AddressingMode::Indirect_X => println!("(${:#x},x)", a),
+                AddressingMode::Indirect_Y => {
+                    println!("$({:#x}),y", ((b as u16) << 8) | (a as u16))
+                }
+                AddressingMode::NoneAddressing => println!(""),
+            }
+
             match op.name.as_str() {
                 "ADC" => self.adc(&op.mode),
                 "AND" => self.and(&op.mode),
@@ -615,6 +636,7 @@ impl CPU {
                 "LDX" => self.ldx(&op.mode),
                 "LDY" => self.ldy(&op.mode),
                 "LSR" => self.lsr(&op.mode),
+                "NOP" => self.nop(),
                 "ORA" => self.ora(&op.mode),
                 "PHA" => self.pha(),
                 "PHP" => self.php(),
