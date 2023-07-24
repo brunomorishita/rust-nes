@@ -1,8 +1,11 @@
+pub mod bus;
+pub mod cpu;
+pub mod opcode;
+
+use bus::Bus;
 use cpu::CPU;
 
-mod cpu;
-mod opcode;
-
+use cpu::Mem;
 use rand::Rng;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -121,9 +124,11 @@ fn main() {
     ];
 
     //load the game
-    let mut cpu = CPU::new();
+    let bus = Bus::new();
+    let mut cpu = CPU::new(bus);
     cpu.load(game_code);
     cpu.reset();
+    cpu.program_counter = 0x0600;
 
     let mut screen_state = [0 as u8; 32 * 3 * 32];
     let mut rng = rand::thread_rng();
